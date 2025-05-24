@@ -71,11 +71,12 @@ pipeline {
 
                         export KUBECONFIG=/tmp/kubeconfig
 
-                        # Generate kubeconfig and fix deprecated v1beta1 to v1
-                        aws eks update-kubeconfig --region eu-west-1 --name mukta-cluster --kubeconfig $KUBECONFIG --alias mukta-cluster
-                        sed -i 's/client.authentication.k8s.io\\/v1beta1/client.authentication.k8s.io\\/v1/' $KUBECONFIG
+                        # Generate kubeconfig with interactiveMode set to Never to fix the error
+                        aws eks update-kubeconfig --region eu-west-1 --name mukta-cluster --kubeconfig $KUBECONFIG --alias mukta-cluster --interactive-mode Never
 
-                        # Test and deploy
+                        # Patch v1beta1 to v1 if necessary (optional)
+                        sed -i 's/client.authentication.k8s.io\\/v1beta1/client.authentication.k8s.io\\/v1/' $KUBECONFIG || true
+
                         kubectl --kubeconfig=$KUBECONFIG get nodes
 
                         kubectl --kubeconfig=$KUBECONFIG apply --validate=false -f mongodb-deployment.yml
