@@ -43,8 +43,15 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 echo 'Deploying resources to Kubernetes'
-                withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
+                withCredentials([
+                    file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG'),
+                    usernamePassword(credentialsId: 'aws-eks-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
                     sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        export AWS_DEFAULT_REGION=eu-west-1
+
                         export KUBECONFIG=$KUBECONFIG
 
                         # Debugging: check kubectl connectivity
