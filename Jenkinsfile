@@ -43,24 +43,28 @@ pipeline {
         stage('Deploy to Kubernetes') {
     steps {
         echo 'Deploying resources to Kubernetes'
-        withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
+        withCredentials([
+            usernamePassword(credentialsId: 'aws-eks-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
+            file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')
+        ]) {
             sh '''
+                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                export AWS_DEFAULT_REGION=eu-west-1
+
                 export KUBECONFIG=$KUBECONFIG
 
-                # Debug: show current kube config and context
+                # Check cluster connectivity
                 kubectl config view
-                kubectl config current-context
-
-                # Check nodes connectivity
                 kubectl get nodes
 
-                # Apply Kubernetes manifests without validation
+                # Apply Kubernetes manifests
                 kubectl apply --validate=false -f mongodb-deployment.yml
                 kubectl apply --validate=false -f mongodb-service.yml
                 kubectl apply --validate=false -f usernode-js-service.yml
                 kubectl apply --validate=false -f userprofile-deployment.yml
 
-                # Wait for deployments to roll out
+                # Wait for rollouts
                 kubectl rollout status deployment/mongodb || true
                 kubectl rollout status deployment/userprofile || true
             '''
