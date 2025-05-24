@@ -40,22 +40,12 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy MongoDB') {
             steps {
-                echo 'Deploying application to Kubernetes cluster'
-                script {
-                    // If using kubeconfig stored as a Jenkins secret file
-                    writeFile file: 'kubeconfig', text: KUBECONFIG_CREDENTIALS
-
-                    // Export kubeconfig environment variable to use this config file
-                    sh 'export KUBECONFIG=$WORKSPACE/kubeconfig'
-
-                    // Apply your k8s manifests (adjust path if different)
-                    sh 'kubectl apply -f k8s/deployment.yaml'
-
-                    // Optional: verify deployment rollout status
-                    sh 'kubectl rollout status deployment/frontend-app'
-                }
+                echo 'Deploying MongoDB to Kubernetes'
+                sh 'kubectl apply -f k8s/mongodb-deployment.yaml'
+                sh 'kubectl apply -f k8s/mongodb-service.yaml'
+                sh 'kubectl rollout status deployment/mongodb'
             }
         }
     }
