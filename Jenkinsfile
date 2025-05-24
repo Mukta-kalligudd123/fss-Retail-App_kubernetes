@@ -41,35 +41,31 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            steps {
-                echo 'Deploying resources to Kubernetes'
-                withCredentials([
-                    file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG'),
-                    usernamePassword(credentialsId: 'aws-eks-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        export AWS_DEFAULT_REGION=eu-west-1
+    steps {
+        echo 'Deploying resources to Kubernetes'
+        withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
+            sh '''
+                export KUBECONFIG=$KUBECONFIG
 
-                        export KUBECONFIG=$KUBECONFIG
+                # Debug: show current kube config and context
+                kubectl config view
+                kubectl config current-context
 
-                        # Debugging: check kubectl connectivity
-                        kubectl config view
-                        kubectl get nodes
+                # Check nodes connectivity
+                kubectl get nodes
 
-                        # Apply resources with validation off (helps bypass some API validation issues)
-                        kubectl apply --validate=false -f mongodb-deployment.yml
-                        kubectl apply --validate=false -f mongodb-service.yml
-                        kubectl apply --validate=false -f usernode-js-service.yml
-                        kubectl apply --validate=false -f userprofile-deployment.yml
+                # Apply Kubernetes manifests without validation
+                kubectl apply --validate=false -f mongodb-deployment.yml
+                kubectl apply --validate=false -f mongodb-service.yml
+                kubectl apply --validate=false -f usernode-js-service.yml
+                kubectl apply --validate=false -f userprofile-deployment.yml
 
-                        # Wait for rollouts
-                        kubectl rollout status deployment/mongodb || true
-                        kubectl rollout status deployment/userprofile || true
-                    '''
-                }
-            }
+                # Wait for deployments to roll out
+                kubectl rollout status deployment/mongodb || true
+                kubectl rollout status deployment/userprofile || true
+            '''
         }
+    }
+}
     }
 }
