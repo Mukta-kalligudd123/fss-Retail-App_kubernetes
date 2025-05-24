@@ -21,10 +21,24 @@ pipeline {
             }
         }
 
+        stage('Check Tools') {
+            steps {
+                sh 'aws --version'
+                sh 'kubectl version --client'
+                sh 'docker --version'
+            }
+        }
+
         stage('Push Frontend Image') {
             steps {
                 echo 'Pushing frontend-app image to Docker Hub'
-                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-cred',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
@@ -44,7 +58,11 @@ pipeline {
             steps {
                 echo 'Deploying resources to Kubernetes'
                 withCredentials([
-                    usernamePassword(credentialsId: 'aws-eks-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
+                    usernamePassword(
+                        credentialsId: 'aws-eks-creds',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ),
                     file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')
                 ]) {
                     sh '''
