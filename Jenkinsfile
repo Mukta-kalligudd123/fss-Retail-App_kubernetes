@@ -22,20 +22,16 @@ pipeline {
             }
         }
 
-        stage('Tag and Push Frontend Image') {
+        stage('Push Frontend Image') {
             steps {
-                echo 'Tagging and pushing frontend-app image to Docker Hub'
+                echo 'Pushing frontend-app image to Docker Hub'
                 script {
-                    // Tag the built frontend-app image with your Docker Hub repo and tag
-                    sh "docker tag fss-retail-app_kubernetes_frontend-app ${DOCKER_IMAGE}:${IMAGE_TAG}"
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-cred-id') {
-                        sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
-                    }
+                    sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
                 }
             }
         }
 
-        // Optional stage to run the app using docker-compose (can be removed if not needed)
         stage('Run App (Optional)') {
             steps {
                 echo 'Starting application with docker-compose up -d'
