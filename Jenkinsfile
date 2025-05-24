@@ -41,19 +41,22 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            steps {
-                echo 'Deploying resources to Kubernetes'
-                withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
-                    sh 'kubectl apply -f mongodb-deployment.yml'
-                    sh 'kubectl apply -f mongodb-service.yml'
-                    sh 'kubectl apply -f usernode-js-service.yml'
-                    sh 'kubectl apply -f userprofile-deployment.yml'
+    steps {
+        echo 'Deploying resources to Kubernetes'
+        withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
+            sh '''
+                export KUBECONFIG=$KUBECONFIG
+                kubectl apply -f mongodb-deployment.yml
+                kubectl apply -f mongodb-service.yml
+                kubectl apply -f usernode-js-service.yml
+                kubectl apply -f userprofile-deployment.yml
 
-                    // Monitor deployments
-                    sh 'kubectl rollout status deployment/mongodb || true'
-                    sh 'kubectl rollout status deployment/userprofile || true'
-                }
-            }
+                kubectl rollout status deployment/mongodb || true
+                kubectl rollout status deployment/userprofile || true
+            '''
         }
+    }
+}
+
     }
 }
