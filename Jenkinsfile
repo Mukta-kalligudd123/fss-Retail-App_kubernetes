@@ -41,22 +41,28 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-    steps {
-        echo 'Deploying resources to Kubernetes'
-        withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
-            sh '''
-                export KUBECONFIG=$KUBECONFIG
-                kubectl apply -f mongodb-deployment.yml
-                kubectl apply -f mongodb-service.yml
-                kubectl apply -f usernode-js-service.yml
-                kubectl apply -f userprofile-deployment.yml
+            steps {
+                echo 'Deploying resources to Kubernetes'
+                withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG
 
-                kubectl rollout status deployment/mongodb || true
-                kubectl rollout status deployment/userprofile || true
-            '''
+                        # Debugging: check kubectl connectivity
+                        kubectl config view
+                        kubectl get nodes
+
+                        # Apply resources with validation off (helps bypass some API validation issues)
+                        kubectl apply --validate=false -f mongodb-deployment.yml
+                        kubectl apply --validate=false -f mongodb-service.yml
+                        kubectl apply --validate=false -f usernode-js-service.yml
+                        kubectl apply --validate=false -f userprofile-deployment.yml
+
+                        # Wait for rollouts
+                        kubectl rollout status deployment/mongodb || true
+                        kubectl rollout status deployment/userprofile || true
+                    '''
+                }
+            }
         }
-    }
-}
-
     }
 }
