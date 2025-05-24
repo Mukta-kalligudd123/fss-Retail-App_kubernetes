@@ -62,16 +62,15 @@ pipeline {
                         credentialsId: 'aws-eks-creds',
                         usernameVariable: 'AWS_ACCESS_KEY_ID',
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ),
-                    file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')
+                    )
                 ]) {
                     sh '''
                         export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
                         export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                         export AWS_DEFAULT_REGION=eu-west-1
-                        export KUBECONFIG=$KUBECONFIG
 
-                        kubectl config view
+                        aws eks update-kubeconfig --region eu-west-1 --name mukta-cluster
+
                         kubectl get nodes
 
                         kubectl apply --validate=false -f mongodb-deployment.yml
