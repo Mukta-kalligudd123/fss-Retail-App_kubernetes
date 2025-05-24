@@ -55,34 +55,38 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            steps {
-                echo 'Deploying resources to Kubernetes'
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-eks-creds',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        export AWS_DEFAULT_REGION=eu-west-1
+    steps {
+        echo 'Deploying resources to Kubernetes'
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'aws-eks-creds',
+                usernameVariable: 'AWS_ACCESS_KEY_ID',
+                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+            )
+        ]) {
+            sh '''
+                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                export AWS_DEFAULT_REGION=eu-west-1
 
-                        aws eks update-kubeconfig --region eu-west-1 --name mukta-cluster
+                export KUBECONFIG=/tmp/kubeconfig
+                aws eks update-kubeconfig --region eu-west-1 --name mukta-cluster --kubeconfig $KUBECONFIG
 
-                        kubectl get nodes
+                # Optional: Check token generation
+                aws eks get-token --region eu-west-1 --cluster-name mukta-cluster
 
-                        kubectl apply --validate=false -f mongodb-deployment.yml
-                        kubectl apply --validate=false -f mongodb-service.yml
-                        kubectl apply --validate=false -f usernode-js-service.yml
-                        kubectl apply --validate=false -f userprofile-deployment.yml
+                kubectl --kubeconfig=$KUBECONFIG get nodes
 
-                        kubectl rollout status deployment/mongodb || true
-                        kubectl rollout status deployment/userprofile || true
-                    '''
-                }
-            }
+                kubectl --kubeconfig=$KUBECONFIG apply --validate=false -f mongodb-deployment.yml
+                kubectl --kubeconfig=$KUBECONFIG apply --validate=false -f mongodb-service.yml
+                kubectl --kubeconfig=$KUBECONFIG apply --validate=false -f usernode-js-service.yml
+                kubectl --kubeconfig=$KUBECONFIG apply --validate=false -f userprofile-deployment.yml
+
+                kubectl --kubeconfig=$KUBECONFIG rollout status deployment/mongodb || true
+                kubectl --kubeconfig=$KUBECONFIG rollout status deployment/userprofile || true
+            '''
         }
+    }
+}
     }
 }
