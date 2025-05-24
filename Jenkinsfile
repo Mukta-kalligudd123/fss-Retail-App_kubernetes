@@ -43,8 +43,8 @@ pipeline {
         stage('Deploy MongoDB') {
             steps {
                 echo 'Deploying MongoDB to Kubernetes'
-                sh 'kubectl apply -f mongodb-deployment.yaml'
-                sh 'kubectl apply -f mongodb-service.yaml'
+                sh 'kubectl apply -f mongodb-deployment.yml'
+                sh 'kubectl apply -f mongodb-service.yml'
                 sh 'kubectl rollout status deployment/mongodb'
             }
         }
