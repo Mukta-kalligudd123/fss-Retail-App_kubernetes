@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('docker-cred') // Jenkins DockerHub credentials ID
         DOCKER_IMAGE = "mukta178/frontend-app"
         IMAGE_TAG = "latest"
-        KUBECONFIG_CREDENTIALS = credentials('kubeconfig-cred') // Optional: if you store kubeconfig as Jenkins secret file
+        KUBECONFIG_CREDENTIALS = credentials('kubeconfig-cred') // Kubeconfig as Jenkins secret file
     }
 
     stages {
@@ -40,12 +40,19 @@ pipeline {
             }
         }
 
-        stage('Deploy MongoDB') {
+        stage('Deploy to Kubernetes') {
             steps {
-                echo 'Deploying MongoDB to Kubernetes'
-                sh 'kubectl apply -f mongodb-deployment.yml'
-                sh 'kubectl apply -f mongodb-service.yml'
-                sh 'kubectl rollout status deployment/mongodb'
+                echo 'Deploying resources to Kubernetes'
+                withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
+                    sh 'kubectl apply -f mongodb-deployment.yml'
+                    sh 'kubectl apply -f mongodb-service.yml'
+                    sh 'kubectl apply -f usernode-js-service.yml'
+                    sh 'kubectl apply -f userprofile-deployment.yml'
+
+                    // Monitor deployments
+                    sh 'kubectl rollout status deployment/mongodb || true'
+                    sh 'kubectl rollout status deployment/userprofile || true'
+                }
             }
         }
     }
